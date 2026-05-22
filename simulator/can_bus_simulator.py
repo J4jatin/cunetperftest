@@ -78,3 +78,74 @@ class CANBusSimulator:
         # Run
         for node in self.nodes.values():
             node.start()
+        time.sleep(duration_s)
+        for node in self.nodes.values():
+            node.stop()
+        return list(self._bus_messages)
+
+    def run_ota_scenario(self, n_chunks: int = 20) -> List[CANMessage]:
+        """
+        OTA update scenario: OTA ECU simulates a firmware download sequence.
+        Measures impact of OTA traffic on other ECU communication latencies.
+        """
+        messages = []
+        # Start all non-OTA ECUs as background traffic
+        background_nodes = [n for nid, n in self.nodes.items() if nid != "OTA"]
+        for node in background_nodes:
+            node.start()
+
+        # Run OTA update
+        ota_node = self.nodes.get("OTA")
+        if ota_node:
+            ota_messages = ota_node.simulate_ota_update(n_chunks=n_chunks)
+            messages.extend(ota_messages)
+
+        time.sleep(1.0)  # let background settle
+        for node in background_nodes:
+            node.stop()
+
+        with self._lock:
+            messages.extend(self._bus_messages)
+        return messages
+
+    def run_uds_diagnostic_session(self, ecu_id: str = "ECM") -> List[CANMessage]:
+        """Run a full UDS diagnostic session on a target ECU."""
+        node = self.nodes.get(ecu_id)
+        if not node:
+            raise ValueError(f"ECU {ecu_id} not found")
+        messages = []
+        uds_sequence = [
+            (0x10, b"\x03"),          # DiagnosticSessionControl - extended
+            (0x27, b"\x01"),          # SecurityAccess - request seed
+            (0x27, b"\x02\xAB\xCD"), # SecurityAccess - send key
+            (0x22, b"\xF1\x90"),     # ReadDataByIdentifier - VIN
+            (0x22, b"\xF1\x86"),     # ReadDataByIdentifier - active diag session
+            (0x19, b"\x02\xFF"),     # ReadDTCInformation - all DTCs
+            (0x3E, b"\x00"),          # TesterPresent
+            (0x10, b"\x01"),          # DiagnosticSessionControl - return to default
+        ]
+        for service_id, data in uds_sequence:
+            msg = node.simulate_uds_request(service_id, data)
+            messages.append(msg)
+        return messages
+
+    def get_bus_stats(self, messages: List[CANMessage]) -> BusStats:
+        if not messages:
+            return BusStats()
+        timestamps = [m.timestamp for m in messages]
+        duration = timestamps[-1] - timestamps[0] if len(timestamps) > 1 else 1.0
+        dropped = sum(1 for m in messages if m.dropped)
+        rate = len(messages) / duration if duration > 0 else 0
+        # Bus load: (messages * avg frame bits) / (bus speed * duration)
+        avg_bits = self.MAX_FRAME_BITS
+        bus_load = (len(messages) * avg_bits) / (self.BUS_SPEED_KBPS * 1000 * duration) * 100
+        return BusStats(
+            total_messages=len(messages),
+            total_dropped=dropped,
+            bus_load_percent=round(min(bus_load, 100.0), 2),
+            duration_s=round(duration, 3),
+            messages_per_second=round(rate, 2),
+        )
+
+    def get_all_node_stats(self) -> List[dict]:
+        return [node.get_stats() for node in self.nodes.values()]
