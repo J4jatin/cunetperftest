@@ -122,4 +122,3 @@ class NetworkPerformanceAnalyzer:
             "p99":   round(s[int(n * 0.99)], 3),
             "stdev": round(statistics.stdev(latencies), 3) if n > 1 else 0,
         }
-# bottleneck detection added
