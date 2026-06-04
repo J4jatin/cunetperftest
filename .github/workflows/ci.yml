@@ -1,0 +1,41 @@
+name: CUNetPerfTest CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov jinja2
+
+      - name: Run performance tests
+        run: |
+          pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing \
+            --tb=short -x
+
+      - name: Run all scenarios (smoke test)
+        run: |
+          python main.py --scenario all --duration 1.0
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: coverage.xml
