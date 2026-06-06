@@ -1,7 +1,7 @@
 # CUNetPerfTest — Control Unit Network Performance Test Framework
 
 > **Performance testing framework for vehicle CAN bus control unit networks**  
-> ECU Simulation | CAN Bus | UDS Diagnostics | OTA Update | Performance Analysis | pytest
+> ECU Simulation | CAN Bus | UDS Diagnostics | OTA Update | P95/P99 Analysis | pytest
 
 ![CI](https://github.com/J4jatin/cunetperftest/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
@@ -11,12 +11,9 @@
 
 ## Overview
 
-CUNetPerfTest simulates a vehicle CAN bus network with multiple ECU nodes and measures performance across three test scenarios. Built to mirror the performance testing work done in automotive diagnostic stack teams.
+Testing real CAN bus networks during development is slow and expensive — you need hardware, a car, and test environments. CUNetPerfTest is a pure-Python simulation framework that lets you benchmark ECU network performance (latency, throughput, jitter, SLA compliance) without touching any hardware.
 
-**Directly addresses the Porsche internship tasks:**
-- *"Planning, execution and evaluation of performance tests in the control unit network"*
-- *"Performance analyses and optimizations"*
-- *"Preparation, organization, execution and evaluation of experimental setups"*
+It simulates 5 ECU nodes communicating over a virtual CAN bus, runs three load scenarios (baseline, 3x stress, OTA firmware update), and produces P95/P99 latency reports. Useful for catching performance regressions early in embedded software development.
 
 ---
 
