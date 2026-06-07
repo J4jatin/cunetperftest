@@ -6,6 +6,7 @@
 ![CI](https://github.com/J4jatin/cunetperftest/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Tests](https://img.shields.io/badge/tests-20%20passing-green)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://j4jatin-cunetperftest-streamlit-app-sp2ttj.streamlit.app)
 
 ---
 
